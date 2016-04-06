@@ -5,6 +5,7 @@ import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -34,7 +35,7 @@ public class MyActivity extends AppCompatActivity implements SensorEventListener
     private AlertDialog mAboutDialog;
 
     // define the display assembly compass picture
-    private ImageView image;
+    private ImageView mPointer;
 
     // record the compass picture angle turned
     private float currentDegree = 0f;
@@ -44,17 +45,9 @@ public class MyActivity extends AppCompatActivity implements SensorEventListener
 
     TextView tvHeading;
 
-    private ImageView mPointer;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private Sensor mMagnetometer;
-    private float[] mLastAccelerometer = new float[3];
-    private float[] mLastMagnetometer = new float[3];
-    private boolean mLastAccelerometerSet = false;
-    private boolean mLastMagnetometerSet = false;
-    private float[] mR = new float[9];
-    private float[] mOrientation = new float[3];
-    private float mCurrentDegree = 0f;
 
 
 
@@ -69,47 +62,56 @@ public class MyActivity extends AppCompatActivity implements SensorEventListener
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+       // mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+      //  mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
 
 
         Button button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Context context = view.getContext();
-                mAboutDialog = new AlertDialog.Builder(context)
-                        .setTitle("Accelerometer values")
-                        .setMessage("x = " + Float.toString(last_x) + "\ny = " + Float.toString(last_y) + "\nz = " + Float.toString(last_z))
-                .setPositiveButton("ok", new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                })
-                        .show();
-            }
-        });
+        try {
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Context context = view.getContext();
+                    mAboutDialog = new AlertDialog.Builder(context)
+                            .setTitle("Accelerometer values")
+                            .setMessage("x = " + Float.toString(last_x) + "\ny = " + Float.toString(last_y) + "\nz = " + Float.toString(last_z))
+                            .setPositiveButton("ok", new OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .show();
+                }
+            });
+        } catch (Exception e) {}
         Button compass = (Button) findViewById(R.id.button2);
-        compass.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-//                RelativeLayout container = (RelativeLayout) findViewById(R.id.main_container);
-//                View inflatedLayout= getLayoutInflater().inflate(R.layout.compass, null, false);
-//                container.addView(inflatedLayout);
+        try {
 
-                System.out.println("XXX: " + (getSupportFragmentManager().getBackStackEntryCount()));
-                Fragment newFragment = new CompassFragment();
-                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                ft.add(R.id.my_activity, newFragment, CompassFragment.TAG).addToBackStack(null).commit();
 
-                mPointer = (ImageView) findViewById(R.id.imageViewCompass);
+            compass.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent myIntent = new Intent(MyActivity.this, CompassActivity.class);
+                    //myIntent.putExtra("key", value); //Optional parameters
+                    MyActivity.this.startActivity(myIntent);
 
-                System.out.println("XXX: " + mPointer);
+//                System.out.println("XXX: " + (getSupportFragmentManager().getBackStackEntryCount()));
+                    //               Fragment newFragment = new CompassFragment();
+                    //             FragmentTransaction ft = getFragmentManager().beginTransaction();
+                    //              ft.add(R.id.my_activity, newFragment, CompassFragment.TAG).addToBackStack(null).commit();
 
-            }
-        });
+                    mPointer = (ImageView) findViewById(R.id.imageViewCompass);
+                    tvHeading = (TextView) findViewById(R.id.tvHeading);
+
+                    System.out.println("XXX: " + mPointer);
+
+                }
+            });
+        } catch (Exception e) {
+
+        }
 
     }
 
@@ -174,37 +176,8 @@ public class MyActivity extends AppCompatActivity implements SensorEventListener
                 last_y = y;
                 last_z = z;
             }else {
-                if (event.sensor == mAccelerometer) {
-                    System.arraycopy(event.values, 0, mLastAccelerometer, 0, event.values.length);
-                    mLastAccelerometerSet = true;
-                } else if (event.sensor == mMagnetometer) {
-                    System.arraycopy(event.values, 0, mLastMagnetometer, 0, event.values.length);
-                    mLastMagnetometerSet = true;
-                }
-                if (mLastAccelerometerSet && mLastMagnetometerSet) {
-                    SensorManager.getRotationMatrix(mR, null, mLastAccelerometer, mLastMagnetometer);
-                    SensorManager.getOrientation(mR, mOrientation);
-                    float azimuthInRadians = mOrientation[0];
-                    float azimuthInDegress = (float) (Math.toDegrees(azimuthInRadians) + 360) % 360;
-                    RotateAnimation ra = new RotateAnimation(
-                            mCurrentDegree,
-                            -azimuthInDegress,
-                            Animation.RELATIVE_TO_SELF, 0.5f,
-                            Animation.RELATIVE_TO_SELF,
-                            0.5f);
 
-                    ra.setDuration(250);
-
-                    ra.setFillAfter(true);
-
-                    if (mPointer != null) {
-                        System.out.println("XXX: inne i else");
-                        mPointer.startAnimation(ra);
-                    }
-                    mCurrentDegree = -azimuthInDegress;
-                }
             }
-
     }
 
     @Override
@@ -214,15 +187,15 @@ public class MyActivity extends AppCompatActivity implements SensorEventListener
 
     protected void onPause() {
         super.onPause();
-        mSensorManager.unregisterListener(this, mAccelerometer);
-        mSensorManager.unregisterListener(this, mMagnetometer);
+//        mSensorManager.unregisterListener(this, mAccelerometer);
+//        mSensorManager.unregisterListener(this, mMagnetometer);
 
     }
 
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
+ //       mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+ //       mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
 
